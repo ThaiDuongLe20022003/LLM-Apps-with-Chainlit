@@ -8,7 +8,7 @@ Hi there, welcome to Guardian Pharmacy. How can I assist you today? Let me know 
 - Metformin (500mg, 28 tablets) - $8.99
 - Atorvastatin (20mg, 30 tablets) - $15.99
 - Losartan (50mg, 30 tablets) - $9.99
-- Levothyroxine (100mcg, 30 tablets) - $7.99
+- Levothyroxine (100mg, 30 tablets) - $7.99
 - Simvastatin (20mg, 30 tablets) - $12.99
 - Omeprazole (20mg, 30 capsules) - $14.99
 - Prednisone (5mg, 30 tablets) - $6.99

@@ -1,21 +1,35 @@
 import chainlit as cl
 from src.llm import ask_order, messages
+from typing import Optional
 
-# Load the content of chainlit.md
-try:
-    with open("chainlit.md", "r", encoding="utf-8") as file:
-        markdown_content = file.read()
-except FileNotFoundError:
-    markdown_content = "Markdown file not found. Please check the file path."
+@cl.set_starters
+async def set_starters():
+    return [
+        cl.Starter(
+            label="Morning routine ideation",
+            message="Can you help me create a personalized morning routine that would help increase my productivity throughout the day? Start by asking me about my current habits and what activities energize me in the morning.",
+            icon="/public/idea.svg",
+            ),
 
-@cl.on_chat_start
-async def send_welcome_message():
-    # Send the markdown content when the chatbot is initialized
-    await cl.Message(content=markdown_content).send()
+        cl.Starter(
+            label="Explain superconductors",
+            message="Explain superconductors like I'm five years old.",
+            icon="/public/learn.svg",
+            ),
+        cl.Starter(
+            label="Python script for daily email reports",
+            message="Write a script to automate sending daily email reports in Python, and walk me through how I would set it up.",
+            icon="/public/terminal.svg",
+            ),
+        cl.Starter(
+            label="Text inviting friend to wedding",
+            message="Write a text asking a friend to be my plus-one at a wedding next month. I want to keep it super short and casual, and offer an out.",
+            icon="/public/write.svg",
+            )
+        ]
 
 @cl.on_message
 async def main(message: cl.Message):
-    # Your custom logic goes here...
     messages.append({"role": "user", "content": message.content})
     response = ask_order(messages)
     messages.append({"role": "assistant", "content": response})
@@ -23,6 +37,19 @@ async def main(message: cl.Message):
     # Send a response back to the user
     await cl.Message(content=response).send()
 
-# Note: You should also have a run command to start the Chainlit app
+@cl.password_auth_callback
+def auth_callback(username: str, password: str):
+    users = {
+        "Duong": "10421012",        
+        "Bao": "10421005"  
+    }
+    
+    if username in users and users[username] == password:
+        return cl.User(
+            identifier=username, metadata={"role": username, "provider": "credentials"}
+        )
+    else:
+        return None
+
 if __name__ == "__main__":
     cl.run(main)
