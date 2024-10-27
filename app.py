@@ -1,9 +1,59 @@
 import chainlit as cl
 from src.llm import ask_order, messages
 from typing import Optional
+import json
+import os
+
+MEMORY_FILE = "memory.json"
+
+# Function to load memory from the JSON file
+def load_memory():
+    if os.path.exists(MEMORY_FILE):
+        with open(MEMORY_FILE, "r") as f:
+            return json.load(f)
+    return []
+
+# Function to save conversation history to the JSON file
+def save_memory(memory):
+    with open(MEMORY_FILE, "w") as f:
+        json.dump(memory, f, indent=4)
+
+# Loads persisted messages when resuming a chat session
+@cl.on_chat_resume
+async def resume_conversation(messages: Optional[list] = None):
+    persisted_messages = load_memory()
+    if persisted_messages:
+        # Send all previous messages stored in memory to re-establish context
+        for msg in persisted_messages:
+            await cl.Message(content=msg["content"], role=msg["role"]).send()
+    if messages:
+        # Respond to the latest message from the persisted conversation
+        last_message = messages[-1]
+        response = ask_order(messages)
+        await cl.Message(content=response).send()
+
+# Handles new user messages and saves them to memory.json
+@cl.on_message
+async def main(message: cl.Message):
+    # Load the conversation history from JSON
+    conversation_history = load_memory()
+
+    # Append the user's message and the assistant's response to memory
+    messages.append({"role": "user", "content": message.content})
+    response = ask_order(messages)
+    messages.append({"role": "assistant", "content": response})
+
+    # Save the updated conversation history to JSON
+    conversation_history.append({"role": "user", "content": message.content})
+    conversation_history.append({"role": "assistant", "content": response})
+    save_memory(conversation_history)
+
+    # Send the assistant's response back to the user
+    await cl.Message(content=response).send()
 
 @cl.set_starters
 async def set_starters():
+    # Pre-set topics the user can select from to start the conversation
     return [
         cl.Starter(
             label="Morning routine ideation",
@@ -27,30 +77,15 @@ async def set_starters():
         )
     ]
 
-@cl.on_chat_resume
-async def resume_conversation(messages: Optional[list] = None):
-    if messages:
-        # If there are persisted messages, respond to the latest one
-        last_message = messages[-1]
-        response = ask_order(messages)
-        await cl.Message(content=response).send()
-
-@cl.on_message
-async def main(message: cl.Message):
-    messages.append({"role": "user", "content": message.content})
-    response = ask_order(messages)
-    messages.append({"role": "assistant", "content": response})
-
-    # Send a response back to the user
-    await cl.Message(content=response).send()
-
 @cl.password_auth_callback
 def auth_callback(username: str, password: str):
+    # Dictionary storing usernames and passwords for authentication
     users = {
-        "Duong": "10421012",        
-        "Bao": "10421005"  
+        "Duong": "10421012",
+        "Bao": "10421005"
     }
-    
+
+    # Verifies credentials and returns user metadata if authenticated
     if username in users and users[username] == password:
         return cl.User(
             identifier=username, metadata={"role": username, "provider": "credentials"}
